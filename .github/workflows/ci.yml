@@ -18,3 +18,21 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: npm test
       - run: npm pack --dry-run
+  dco:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit in the pull request is signed off (DCO)
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          missing=0
+          for c in $(git rev-list "$base..$head"); do
+            if ! git log -1 --format=%B "$c" | grep -qi '^Signed-off-by: .* <.*>'; then
+              echo "Commit $c has no Signed-off-by line (use git commit -s)"; missing=1
+            fi
+          done
+          exit $missing
