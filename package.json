@@ -1,0 +1,47 @@
+{
+  "name": "apex-context",
+  "version": "0.1.0",
+  "description": "Read your local coding-agent logs: how much input was probably wasted, and which 'done' claims had no passing check. Local, read-only, no network.",
+  "keywords": [
+    "claude-code",
+    "gemini-cli",
+    "coding-agent",
+    "ai-agents",
+    "tokens",
+    "hooks",
+    "verification",
+    "cli",
+    "privacy"
+  ],
+  "license": "Apache-2.0",
+  "author": "apex-context-dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apex-context-dev/apex-context.git"
+  },
+  "homepage": "https://github.com/apex-context-dev/apex-context#readme",
+  "bugs": {
+    "url": "https://github.com/apex-context-dev/apex-context/issues"
+  },
+  "type": "module",
+  "bin": {
+    "apex-context": "bin/apex-context.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "docs",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {}
+}

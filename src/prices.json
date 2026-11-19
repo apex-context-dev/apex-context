@@ -1,0 +1,15 @@
+{
+  "_note": "USD per million tokens. ESTIMATES: matched by longest model-name prefix. Rates for the 5.x families were inferred from Claude Code's own cost totals and may be off; older families use historic list prices. Override with --prices <file> (same shape).",
+  "unit": "per_million_tokens",
+  "models": {
+    "claude-opus-5":   { "input": 2.5,  "output": 12.5, "cacheRead": 0.25, "cacheWrite": 3.125 },
+    "claude-opus-4":   { "input": 15,   "output": 75,   "cacheRead": 1.5,  "cacheWrite": 18.75 },
+    "claude-fable-5":  { "input": 4.5,  "output": 22.5, "cacheRead": 0.45, "cacheWrite": 5.625 },
+    "claude-sonnet-5": { "input": 1.5,  "output": 7.5,  "cacheRead": 0.15, "cacheWrite": 1.875 },
+    "claude-sonnet-4": { "input": 3,    "output": 15,   "cacheRead": 0.3,  "cacheWrite": 3.75 },
+    "claude-3-7-sonnet": { "input": 3,  "output": 15,   "cacheRead": 0.3,  "cacheWrite": 3.75 },
+    "claude-3-5-sonnet": { "input": 3,  "output": 15,   "cacheRead": 0.3,  "cacheWrite": 3.75 },
+    "claude-haiku-5":  { "input": 0.3,  "output": 1.5,  "cacheRead": 0.03, "cacheWrite": 0.375 },
+    "claude-haiku-4":  { "input": 1,    "output": 5,    "cacheRead": 0.1,  "cacheWrite": 1.25 }
+  }
+}
