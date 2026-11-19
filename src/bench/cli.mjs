@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
+import { fileURLToPath } from "node:url";
 import { builtinArms } from "./arms.mjs";
 import { loadArmsFile } from "./tasks.mjs";
 import { runBench, machine } from "./runner.mjs";
@@ -34,6 +36,17 @@ export async function main(argv, io = { out: console.log, err: console.error }) 
     for (const r of res) io.out(`${r.ok ? "ok  " : "FAIL"} ${path.basename(r.dir)}${r.problems.length ? "  " + r.problems.join("; ") : ""}${r.notes?.length ? `  (note: ${r.notes.join("; ")})` : ""}`);
     io.out(`\n${res.filter((r) => r.ok).length}/${res.length} tasks valid`);
     return res.every((r) => r.ok) ? 0 : 1;
+  }
+
+  if (cmd === "demo") {
+    // Runs the bundled example tasks with the built-in arms: no API key, works from an npx or unpacked copy.
+    const tasksDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../examples/bench/tasks");
+    const res = await validateAll(tasksDir);
+    io.out(`${res.filter((r) => r.ok).length}/${res.length} example tasks valid`);
+    if (!res.every((r) => r.ok)) return 1;
+    const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "apex-context-bench-demo-"));
+    await runBench({ tasksDir, armNames: ["oracle", "noop", "liar"], armDefs: builtinArms(), runs: 2, outDir, log: io.err });
+    return report(outDir, {}, io);
   }
 
   if (cmd === "report") {

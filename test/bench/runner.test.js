@@ -158,3 +158,14 @@ test("fill quotes placeholders for bare, double-quoted and single-quoted context
   assert.equal(run1('printf \'%s\' "{cwd}/x"'), "/tmp/a b/x");
   assert.equal(fill("echo ${cwd}", v), "echo ${cwd}");
 });
+
+test("bench demo: runs the bundled examples with built-in arms from any cwd", async () => {
+  const { main } = await import("../../src/bench/cli.mjs");
+  const out = [];
+  const code = await main(["demo"], { out: (t) => out.push(String(t)), err: () => {} });
+  const text = out.join("\n");
+  assert.equal(code, 0);
+  assert.match(text, /3\/3 example tasks valid/);
+  assert.match(text, /oracle/);
+  assert.match(text, /liar/);
+});

@@ -14,12 +14,13 @@ npx apex-context install-hook            # dry run: prints the hook entry and th
 npx apex-context install-hook --write    # optional: apply it (./.claude/settings.json; --user for ~/.claude)
 ```
 
-Then the benchmark demo, which needs no API key. It runs from a clone or an unpacked package, because it uses the example tasks that ship in `examples/bench/`:
+Then the benchmark demo, which needs no API key and works from any folder because it uses the example tasks that ship with the package:
 
 ```sh
-node bin/apex-context.mjs bench validate examples/bench/tasks
-node bin/apex-context.mjs bench run examples/bench/tasks --arms oracle,noop,liar --runs 2 --out /tmp/bench-demo --fresh
+npx github:apex-context-dev/apex-context bench demo
 ```
+
+(From a clone, `node bin/apex-context.mjs bench demo` does the same; `bench validate examples/bench/tasks` and `bench run ...` take your own task folders.)
 
 Nothing is written to your agent settings unless you pass `--write`. Remove the hook with `uninstall-hook --write`; pause it with `APEX_CONTEXT_GATE=off`.
 
