@@ -146,7 +146,7 @@ test('scoping: a project that itself lives under a scratch path still counts (fi
   fs.writeFileSync(s.tp, new GFx().prompt().edit(f).text('done').toString());
   assert.ok(denied(gate(s)));
   // but the same tmp file with an unrelated cwd stays scratch
-  assert.ok(silent(gate(s, [], { payload: { ...s.payload, cwd: '/Users/nobody/proj' } })));
+  assert.ok(silent(gate(s, [], { payload: { ...s.payload, cwd: '/home/nobody/proj' } })));
 });
 
 test('gemini fail open: bad JSON, no transcript, missing file, garbage file, bad flag', () => {

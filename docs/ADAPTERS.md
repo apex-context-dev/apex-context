@@ -30,7 +30,7 @@ Rules that keep the privacy guarantees:
 - Message text is kept only as a short head/tail for pattern matching, in memory. Never return, print or store it.
 - Never print `file`, `cwd`, `command` or `tail`; the only strings that reach output are fixed vocabulary, counts and model ids (which `metrics.safeModel` filters).
 - Open files read-only. Do not touch the agent's folders.
-- No network, no child processes (a test fails the build if `src/` imports them).
+- No network. No child processes outside `src/bench/` (a test fails the build if report/gate code imports them).
 
 ## Wiring it in
 

@@ -1,0 +1,36 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste real session logs, prompts, file paths or project names. Synthetic examples only. Privacy leaks: use the private security report instead.
+  - type: input
+    id: version
+    attributes: { label: apex-context version, description: Output of `apex-context --version` }
+    validations: { required: true }
+  - type: input
+    id: env
+    attributes: { label: Node version and OS }
+    validations: { required: true }
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [report, gate, install-hook, bench, docs, other]
+    validations: { required: true }
+  - type: input
+    id: agent
+    attributes: { label: Agent and version (if relevant), placeholder: "Claude Code x.y, Gemini CLI x.y" }
+  - type: textarea
+    id: command
+    attributes: { label: Command you ran }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: Expected and actual behavior }
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes: { label: Synthetic reproduction, description: A minimal made-up log or task that shows the problem }

@@ -7,6 +7,7 @@ import { loadSessions, parseSince } from './load.mjs';
 import { computeAll, EXPLAIN } from './metrics.mjs';
 import { runGate, GATE_EXPLAIN } from './gate.mjs';
 import { runHookCommand } from './hooks.mjs';
+import { HELP as BENCH_HELP } from './bench/help.mjs';
 import { renderReport, renderJson, renderShare, noLogsMessage } from './render.mjs';
 
 const VERSION = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')).version;
@@ -20,6 +21,7 @@ Commands
   gate            Stop/AfterAgent hook: warn (or block) when code was edited and nothing proved it
   install-hook    Print (dry run) or write the hook entry in a settings.json
   uninstall-hook  Print (dry run) or remove that hook entry
+  bench           Compare agent setups on the same tasks (run, validate, report); makes no network calls itself
 
 Options
   -h, --help      Show help (also: apex-context <command> --help)
@@ -28,7 +30,10 @@ Options
 Try first:  npx apex-context report
 `;
 
+export { VERSION };
+
 const COMMAND_HELP = {
+  bench: BENCH_HELP,
   report: `apex-context report [options]
 
 Reads your local session logs read-only and prints aggregates only (counts, shares, dollar estimates, model names).

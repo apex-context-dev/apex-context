@@ -1,0 +1,23 @@
+name: Adapter request
+description: Support for another coding agent
+labels: [adapter]
+body:
+  - type: input
+    id: agent
+    attributes: { label: Agent and version }
+    validations: { required: true }
+  - type: textarea
+    id: format
+    attributes:
+      label: Where and how it stores sessions
+      description: Folder, file format, and whether the files are append-only. Describe the structure; do not paste real content.
+  - type: textarea
+    id: hooks
+    attributes: { label: Does it support stop/after-turn hooks? How are they configured? }
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Can you help?
+      options:
+        - label: I can write the adapter (see docs/ADAPTERS.md)
+        - label: I can test it against a live session

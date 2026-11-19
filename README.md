@@ -1,94 +1,97 @@
 # apex-context
 
-Your coding agent shouldn't be able to say "done" without proof. apex-context reads your local agent logs, shows how often it did, and can warn (or block) when code was edited and nothing checked it.
+A coding agent shouldn't be able to say "done" without proof. apex-context measures how often yours did, warns when it happens, and ships the benchmark harness to check whether any fix actually helps.
 
-Local, read-only, no network, zero dependencies, Node >= 20, Apache-2.0.
+Local, read-only report and hook, no network, zero dependencies, Node >= 20, Apache-2.0.
+
+This open project is separate from Apex Capsule IDE, a commercial desktop app; nothing here requires it.
 
 ## 60-second quickstart
 
 ```sh
-npx apex-context report                     # last 30 days of Claude Code logs; nothing to configure
-npx apex-context install-hook               # dry run: prints the hook entry and the file it would go in
-npx apex-context install-hook --write       # apply it (./.claude/settings.json; --user for ~/.claude)
+npx apex-context report                  # last 30 days of Claude Code logs; nothing to configure
+npx apex-context install-hook            # dry run: prints the hook entry and the file it would go in
+npx apex-context install-hook --write    # optional: apply it (./.claude/settings.json; --user for ~/.claude)
 ```
 
-Nothing is written unless you pass `--write`. Remove it with `uninstall-hook --write`. Pause it with `APEX_CONTEXT_GATE=off`.
+Then the benchmark demo, which needs no API key. It runs from a clone or an unpacked package, because it uses the example tasks that ship in `examples/bench/`:
 
-## Commands
-
-`apex-context --help` lists them; `apex-context <command> --help` shows options.
-
-**report** prints what your own logs say. Example output (synthetic numbers):
-
-```
-apex-context: last 30d
-
-42 sessions (2026-10-20 to 2026-11-18), 310M tokens (about $190.00, estimate).
-  input 1.2M, cache read 290M, cache write 11M, output 3.1M
-
-Spends less?
-About 4.2M tokens (~$9.40, estimate) were large file reads the agent used little of (6.1% of input-side tokens).
-  Conservative; not a promise of savings.
-
-Can't fake done?
-23 of 61 completion claims (38%) had nothing run after the last edit to check them.
-  29 proven by a passing test/typecheck/build, 7 manually checked, 2 where the last test failed.
-
-Read-only and local: nothing left this machine. ...
+```sh
+node bin/apex-context.mjs bench validate examples/bench/tasks
+node bin/apex-context.mjs bench run examples/bench/tasks --arms oracle,noop,liar --runs 2 --out /tmp/bench-demo --fresh
 ```
 
-Flags: `--agent claude|gemini`, `--since 30d` (`12h`, `2w`), `--dir <path>`, `--prices <file>`, `--json` (aggregates only), `--share` (short card), `--explain` (every formula).
+Nothing is written to your agent settings unless you pass `--write`. Remove the hook with `uninstall-hook --write`; pause it with `APEX_CONTEXT_GATE=off`.
 
-**gate** is a hook. After each agent turn it checks: was source code edited, and did a test/typecheck/lint/build run after the last edit? If not it prints a one-line warning (default) or, with `--block`, asks the agent to run the checks first. It never loops (at most 2 blocks per turn by default) and fails open on any error. `gate --explain` prints the exact rules.
+## How it works
 
-**install-hook / uninstall-hook** add or remove that hook in a `settings.json`. Dry run by default, merge-safe, idempotent, refuses invalid JSON.
+Three parts, one idea.
 
-## Supported agents and what is verified
+- **report** reads your local agent logs (read-only) and prints aggregates: token spend, large file reads the agent used little of, and "done" claims with no passing check after the last edit.
+- **gate** is a Stop/AfterAgent hook. After each turn it asks: was source code edited, and did a test, typecheck, lint or build run afterwards? If not, it warns (default) or, with `--block`, asks the agent to run the checks first. It fails open.
+- **bench** runs the same tasks under different agent setups (a CLI, a model, a prompt, a hook), scores them with hidden tests, and reports pass rate, tokens, time and false-ready ("claimed done, hidden tests failed") with confidence intervals and paired comparisons.
 
-| Agent | report | gate |
+They connect: report shows the problem in your own logs, gate acts on it, and bench is the evidence for or against the gate. Whether a gate or any other setup reduces false-ready is a question for `bench` to answer with numbers, not a claim this README makes.
+
+Reference: `apex-context --help`, `apex-context <command> --help`, [docs/bench/README.md](docs/bench/README.md), [docs/bench/TASK-FORMAT.md](docs/bench/TASK-FORMAT.md), [docs/ADAPTERS.md](docs/ADAPTERS.md). `report --explain` and `gate --explain` print every formula and rule.
+
+## Status: what is verified, and how
+
+| Area | Verified live | Verified by tests only |
 |---|---|---|
-| Claude Code | tested on synthetic fixtures and run on real local logs | Stop hook: **not yet verified against a live session**. The allow path is covered by tests only; the hook contract is assumed from documentation. |
-| Gemini CLI | tested on synthetic fixtures | AfterAgent hook: **block path verified live on Gemini CLI 0.32.1**. Allow path covered by tests only. |
+| report, Claude Code logs | Run on real local logs | Synthetic fixtures |
+| report, Gemini CLI logs | - | Synthetic fixtures |
+| gate, Claude Code (Stop hook) | **Not yet.** Hook contract is assumed from documentation | Allow and block paths |
+| gate, Gemini CLI (AfterAgent hook) | Block path, on Gemini CLI 0.32.1 | Allow path |
+| install-hook / uninstall-hook | - | Dry run, merge, idempotence, invalid JSON |
+| bench with built-in arms (oracle, noop, liar) | - | Pipeline, statistics, validation, packed demo |
+| bench with real agents (Claude Code, Gemini CLI, aider) | **Not yet.** `examples/bench/arms.example.json` entries are untested | - |
+| Windows | **Not supported** (bench is POSIX only; hooks untested) | - |
 
 Gemini note: headless `-p` with auto-edit approval does not offer the shell tool, so an agent cannot run tests there; a blocking gate can only be satisfied in interactive mode, with `--yolo`, or with an allow-list.
 
-## Privacy
-
-Plain words, each backed by a test in `test/privacy.test.mjs`:
-
-- No network. `src/` imports no http, net, dns, child_process or similar, and uses no fetch; a test fails if that changes. No runtime dependencies, no install scripts.
-- Logs are read in memory, read-only. The tool never writes into the folders it reads.
-- Output holds only counts, shares, dollar estimates, dates, model ids and fixed phrases. Never prompts, assistant text, file paths, project names, commands, env values or tool output. This is tested for the report, `--json`, `--share`, `--explain`, the gate's warning and block reason, `--verbose`, errors, and the scripts.
-- Model names come from logs, so only id-shaped names are printed; anything else shows as `other-model`.
-- The no-logs message names the agent and a fixed default location (`~/.claude/projects`), or "the folder given with --dir". It does not list real folders.
-- The gate's reason may name detected check commands from a fixed list (`npm test`, `npm run lint`, `pytest`, `cargo test`, `go test ./...`, `make test`, ...), never script contents.
-- The gate keeps one small state file per session under your OS temp dir (blocking mode only): name is a hash of the session id, contents are a turn timestamp and a counter, mode 0600 (folder 0700).
-- Uncaught errors print a generic line and the error class, never the message or a stack trace.
-- `install-hook` shows only its own entry, never the rest of your settings, and keeps your file's permissions.
-- `--share` is aggregates only, but it is your numbers: read it before posting.
-
 ## Known limits
 
-- It cannot see checks run by subagents, CI, or another terminal.
+- The gate cannot see checks run by subagents, CI, or another terminal.
 - Test detection is pattern-based; an unusual runner looks like no check. A passing run of the wrong test still counts as proven.
 - Completion claims in `report` are English keyword matches near the end of a turn's final message.
-- Dollar figures and "avoidable input" are estimates. Prices in `src/prices.json` include rates inferred rather than official; override with `--prices`.
-- It does not tell you what any tool would save you, and makes no such promise.
+- Dollar figures and "avoidable input" are estimates. `src/prices.json` includes inferred rates; override with `--prices`.
+- Bench results describe your tasks and your setup, not agents in general. A few dozen tasks cannot separate close arms; read the intervals and the "underpowered" notes. Bench does not sandbox agents. See [docs/bench/README.md](docs/bench/README.md#honest-limits).
+- It does not promise savings or improvement for any setup.
 
-## How the estimates work
+## Privacy
 
-Run `apex-context report --explain` for every formula: how tokens are counted once, what counts as a large read (over 4,000 characters, ~4 chars per token), how "carried" context is priced, and how claims are classified. `gate --explain` does the same for the gate.
+Each point is backed by a test in `test/privacy.test.mjs`.
 
-## FAQ
+- No network. `report`, `gate` and `install-hook` import no http, net, dns, child_process or similar, and use no fetch. `bench` may spawn only the commands you give it as arms and scoring commands, imports no network module, and makes no network calls itself (the agents you run may).
+- `bench` never reads agent session logs; a test runs it with sentinel logs under a temporary HOME and checks nothing leaks.
+- Logs are read in memory, read-only. The tool never writes into the folders it reads.
+- Output holds only counts, shares, dollar estimates, dates, model ids and fixed phrases. Never prompts, assistant text, file paths, project names, commands, env values or tool output.
+- The gate keeps one small state file per session under your OS temp dir (blocking mode only): hashed name, a timestamp and a counter, mode 0600.
+- Uncaught errors in `report` and `gate` print a generic line and the error class only.
+- `--share` is aggregates only, but it is your numbers: read it before posting.
 
-**Does it send data anywhere?** No. There is no network code, and a test keeps it that way.
+## Contributing
 
-**Will it block my agent?** Not by default. The default only warns. Blocking needs `--block` (or `APEX_CONTEXT_GATE_MODE=block`), is limited to 2 blocks per turn, and only triggers for source-code edits in a project with a detectable test runner.
+Concrete ways to help (see [CONTRIBUTING.md](CONTRIBUTING.md)):
 
-**How do I turn it off?** `APEX_CONTEXT_GATE=off`, or `uninstall-hook --write`.
+- **A new agent adapter** (Codex, Cursor, aider, others): one module, see [docs/ADAPTERS.md](docs/ADAPTERS.md).
+- **Test runner and language detection**: teach the gate more ways to recognize a real check.
+- **Benchmark tasks**: small, deterministic tasks in any language, plus held-out sets.
+- **Results from other models and agents**: run `bench` with your own arms and share the manifest and `results.jsonl`.
+- **Verification on real sessions**: especially the Claude Code Stop hook.
 
-**Why did it say nothing?** Most turns are allowed silently: no edits, docs/config/test-only edits, scratch files, or no runner found. Add `--verbose` to the hook command to see a one-line reason.
+Start with issues labelled "good first issue". Also see [ROADMAP.md](ROADMAP.md), [GOVERNANCE.md](GOVERNANCE.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SUPPORT.md](SUPPORT.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md).
 
 ## Development
 
-`npm test`; see [CONTRIBUTING.md](CONTRIBUTING.md), [docs/ADAPTERS.md](docs/ADAPTERS.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md). The repo's `scripts/` (a gate replay and a structure-only turn sampler for maintainers) are not part of the npm package.
+```sh
+npm test
+npm pack --dry-run
+```
+
+The repo's `scripts/` (a gate replay and a structure-only turn sampler for maintainers) are not part of the npm package.
+
+## License
+
+Apache-2.0, see [LICENSE](LICENSE).

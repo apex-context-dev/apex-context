@@ -1,7 +1,7 @@
 {
   "name": "apex-context",
-  "version": "0.1.0",
-  "description": "Read your local coding-agent logs: how much input was probably wasted, and which 'done' claims had no passing check. Local, read-only, no network.",
+  "version": "0.2.0",
+  "description": "Local, read-only checks for coding agents: a report of wasted input and unchecked 'done' claims, a hook that warns when code was edited and nothing proved it, and a benchmark harness. No network.",
   "keywords": [
     "claude-code",
     "gemini-cli",
@@ -10,6 +10,8 @@
     "tokens",
     "hooks",
     "verification",
+    "benchmark",
+    "evaluation",
     "cli",
     "privacy"
   ],
@@ -31,17 +33,23 @@
     "bin",
     "src",
     "docs",
+    "examples",
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
     "SECURITY.md",
-    "CONTRIBUTING.md"
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "GOVERNANCE.md",
+    "ROADMAP.md",
+    "SUPPORT.md",
+    "DCO"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node scripts/test.mjs"
   },
   "dependencies": {}
 }

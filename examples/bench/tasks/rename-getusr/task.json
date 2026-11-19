@@ -1,0 +1,8 @@
+{
+  "id": "rename-getusr",
+  "kind": "refactor",
+  "title": "Rename getUsr to getUser",
+  "prompt": "The function getUsr in src/users.js has a typo in its name. Rename it to getUser everywhere it is defined, exported or used, without changing behaviour.",
+  "timeout": 60,
+  "meta": { "visible": "node --test test/visible.test.js", "hidden": "node --test test/hidden.test.js" }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "add-clamp",
+  "kind": "feature",
+  "title": "Add a clamp function",
+  "prompt": "src/math.js exports double(x). Add and export clamp(x, lo, hi), which returns x limited to the range from lo to hi inclusive. Keep double working.",
+  "timeout": 60,
+  "meta": { "visible": "node --test test/visible.test.js", "hidden": "node --test test/hidden.test.js" }
+}

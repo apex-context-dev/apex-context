@@ -1,0 +1,17 @@
+{
+  "claude-code": {
+    "description": "UNTESTED here. Claude Code in print mode. Check flags against your installed version.",
+    "command": "claude -p {prompt} --output-format json --permission-mode acceptEdits",
+    "readUsage": { "type": "json", "file": "stdout", "in": ["usage.input_tokens", "usage.cache_creation_input_tokens", "usage.cache_read_input_tokens"], "out": "usage.output_tokens" },
+    "claimedDone": { "type": "json", "file": "stdout", "field": "result" }
+  },
+  "gemini-cli": {
+    "description": "UNTESTED here. Gemini CLI non-interactive with auto-approval. It reports no usage in this form, so tokens are n/a.",
+    "command": "gemini -p {prompt} --yolo"
+  },
+  "aider": {
+    "description": "UNTESTED here. aider; prompt from a file, no git commits.",
+    "command": "aider --yes-always --no-auto-commits --message-file {promptFile} --no-stream",
+    "readUsage": { "type": "regex", "source": "stdout", "in": "Tokens: ([\\d.,k]+) sent", "out": "([\\d.,k]+) received" }
+  }
+}

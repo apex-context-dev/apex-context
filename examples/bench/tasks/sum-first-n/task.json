@@ -1,0 +1,8 @@
+{
+  "id": "sum-first-n",
+  "kind": "fix",
+  "title": "Fix sumFirst off-by-one",
+  "prompt": "src/sum.js exports sumFirst(arr, n), which should return the sum of the first n elements of arr. It currently drops the last element it should include. Fix the bug.",
+  "timeout": 60,
+  "meta": { "visible": "node --test test/visible.test.js", "hidden": "node --test test/hidden.test.js" }
+}

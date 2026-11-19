@@ -16,15 +16,37 @@ const ALL = Object.values(S);
 const tmp = (p) => fs.mkdtempSync(path.join(os.tmpdir(), p));
 
 // ---- (a) no network or process-spawning modules in src/ ----
-test('src/ imports no network modules and never spawns processes', () => {
-  const files = [];
-  const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (/\.m?js$/.test(e.name)) files.push(p); } };
-  walk(path.join(ROOT, 'src')); walk(path.join(ROOT, 'bin'));
+// `bench` (src/bench/) is the one place allowed to spawn processes: it runs the agent commands the user gives it.
+// It stays under the network ban, never imports log-reading code, and is never imported by report/gate.
+const BANNED_NET = "https?|http2|net|tls|dgram|dns|dns\\/promises|worker_threads|cluster|inspector|vm|repl";
+const mkBanned = (extra) => new RegExp("(?:from\\s+|import\\s*\\(\\s*|require\\s*\\(\\s*)['\"](?:node:)?(?:" + BANNED_NET + extra + ")['\"]|\\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\\s*\\(|\\bnew\\s+(?:WebSocket|XMLHttpRequest)\\b|\\bprocess\\.binding\\b");
+const walkJs = (d, files = []) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walkJs(p, files); else if (/\.m?js$/.test(e.name)) files.push(p); } return files; };
+const codeOf = (f) => fs.readFileSync(f, 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+const isBench = (f) => f.split(path.sep).includes('bench');
+
+test('report/gate code (src/ except src/bench/, bin/) imports no network modules and never spawns processes', () => {
+  const files = [...walkJs(path.join(ROOT, 'src')), ...walkJs(path.join(ROOT, 'bin'))].filter((f) => !isBench(f));
   assert.ok(files.length >= 8);
-  const banned = /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"](?:node:)?(?:https?|http2|net|tls|dgram|dns|dns\/promises|child_process|worker_threads|cluster|inspector|vm|repl)['"]|\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(|\bnew\s+(?:WebSocket|XMLHttpRequest)\b|\bprocess\.binding\b/;
+  const banned = mkBanned('|child_process');
+  for (const f of files) assert.ok(!banned.test(codeOf(f)), `${path.relative(ROOT, f)} uses a banned module or call`);
+});
+
+test('src/bench/ imports no network modules, no log-reading code, and nothing outside src/bench/', () => {
+  const files = walkJs(path.join(ROOT, 'src', 'bench'));
+  assert.ok(files.length >= 8);
+  const banned = mkBanned('');
   for (const f of files) {
-    const code = fs.readFileSync(f, 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
-    assert.ok(!banned.test(code), `${path.relative(ROOT, f)} uses a banned module or call`);
+    const code = codeOf(f);
+    assert.ok(!banned.test(code), `${path.relative(ROOT, f)} uses a network module or call`);
+    assert.ok(!/\.\.\/(?:adapters|load|metrics|gate|hooks|render)\.mjs|adapters\//.test(code), `${path.relative(ROOT, f)} imports log-reading code`);
+    assert.ok(!/\.claude|\.gemini|projects\/|session/i.test(code.replace(/sessions? (?:slept|suspended)/gi, '')), `${path.relative(ROOT, f)} refers to agent session logs`);
+  }
+});
+
+test('report/gate code never imports bench (except its help text)', () => {
+  for (const f of walkJs(path.join(ROOT, 'src')).filter((x) => !isBench(x))) {
+    const refs = [...codeOf(f).matchAll(/['"]\.\/bench\/([^'"]+)['"]/g)].map((m) => m[1]);
+    for (const r of refs) assert.equal(r, 'help.mjs', `${path.relative(ROOT, f)} imports bench/${r}`);
   }
 });
 
@@ -209,17 +231,34 @@ test('npm pack file list contains only the intended files', () => {
   const r = spawnSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: ROOT, encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   const names = JSON.parse(r.stdout)[0].files.map((f) => f.path).sort();
-  for (const n of names) assert.ok(/^(bin\/|src\/|docs\/|LICENSE$|README\.md$|CHANGELOG\.md$|SECURITY\.md$|CONTRIBUTING\.md$|package\.json$)/.test(n), 'unexpected packed file ' + n);
-  for (const need of ['bin/apex-context.mjs', 'src/cli.mjs', 'src/prices.json', 'LICENSE', 'README.md', 'package.json']) assert.ok(names.includes(need), 'missing ' + need);
+  for (const n of names) assert.ok(/^(bin\/|src\/|docs\/|examples\/bench\/|LICENSE$|README\.md$|CHANGELOG\.md$|SECURITY\.md$|CONTRIBUTING\.md$|CODE_OF_CONDUCT\.md$|GOVERNANCE\.md$|ROADMAP\.md$|SUPPORT\.md$|DCO$|package\.json$)/.test(n), 'unexpected packed file ' + n);
+  for (const need of ['bin/apex-context.mjs', 'src/cli.mjs', 'src/prices.json', 'src/bench/cli.mjs', 'docs/bench/TASK-FORMAT.md', 'examples/bench/tasks/add-clamp/task.json', 'LICENSE', 'README.md', 'package.json']) assert.ok(names.includes(need), 'missing ' + need);
 });
 
 test('CLI usage: no command and --help print help (exit 0), --version, bad usage is non-zero', () => {
   const sp = (...a) => spawnSync(process.execPath, [BIN, ...a], { encoding: 'utf8' });
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   assert.equal(sp().status, 0); assert.match(sp().stdout, /Commands/);
-  assert.match(sp('--help').stdout, /report .*install-hook/s);
+  assert.match(sp('--help').stdout, /report .*install-hook.*bench/s);
   assert.equal(sp('--version').stdout.trim(), pkg.version);
-  for (const c of ['report', 'gate', 'install-hook', 'uninstall-hook']) { const h = sp(c, '--help'); assert.equal(h.status, 0); assert.match(h.stdout, new RegExp('apex-context ' + c)); }
+  for (const c of ["report", "gate", "install-hook", "uninstall-hook", "bench"]) { const h = sp(c, '--help'); assert.equal(h.status, 0); assert.match(h.stdout, new RegExp('apex-context ' + c)); }
   assert.match(sp('help', 'gate').stdout, /apex-context gate/);
   assert.equal(sp('bogus').status, 2); assert.equal(sp('report', '--nope').status, 2); assert.equal(sp('report', '--dir').status, 2);
+});
+
+// ---- (c) bench never reads agent session logs ----
+test('bench demo output and results contain no sentinel from agent session logs under HOME', () => {
+  const { root } = claudeFixture();
+  const home = tmp('apxbhome-');
+  const out = tmp('apxbout-');
+  fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+  fs.cpSync(root, path.join(home, '.claude', 'projects'), { recursive: true });
+  try {
+    const r = spawnSync(process.execPath, [BIN, 'bench', 'run', path.join(ROOT, 'examples', 'bench', 'tasks'), '--arms', 'oracle,noop,liar', '--runs', '1', '--out', out, '--fresh'], { encoding: 'utf8', cwd: ROOT, env: { ...process.env, HOME: home } });
+    assert.equal(r.status, 0, r.stderr);
+    clean(r.stdout + r.stderr);
+    const all = []; const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else all.push(fs.readFileSync(p, 'utf8')); } };
+    walk(out);
+    clean(all.join('\n'));
+  } finally { for (const d of [root, home, out]) fs.rmSync(d, { recursive: true, force: true }); }
 });

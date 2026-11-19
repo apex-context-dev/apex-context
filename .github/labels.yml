@@ -1,0 +1,28 @@
+# Label definitions for the owner to apply later (e.g. with a labels-sync tool or by hand).
+- name: good first issue
+  color: "7057ff"
+  description: Small, well-scoped, suitable for a first contribution
+- name: help wanted
+  color: "008672"
+  description: Maintainers would welcome a contribution
+- name: adapter
+  color: "1d76db"
+  description: Support for a coding agent
+- name: runner-detection
+  color: "fbca04"
+  description: Test-runner or language detection for the gate
+- name: bench-task
+  color: "0e8a16"
+  description: Benchmark tasks, format or harness
+- name: docs
+  color: "0075ca"
+  description: Documentation
+- name: privacy
+  color: "b60205"
+  description: Output, logs or data-handling concern
+- name: bug
+  color: "d73a4a"
+  description: Something is not working
+- name: enhancement
+  color: "a2eeef"
+  description: New feature or improvement
