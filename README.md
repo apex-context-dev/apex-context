@@ -8,10 +8,18 @@ This open project is separate from Apex Capsule IDE, a commercial desktop app; n
 
 ## 60-second quickstart
 
+The package is not on npm yet, so run it straight from GitHub (Node 20 or newer, nothing else to install):
+
 ```sh
-npx apex-context report                  # last 30 days of Claude Code logs; nothing to configure
-npx apex-context install-hook            # dry run: prints the hook entry and the file it would go in
-npx apex-context install-hook --write    # optional: apply it (./.claude/settings.json; --user for ~/.claude)
+npx github:apex-context-dev/apex-context report     # last 30 days of Claude Code logs; nothing to configure
+```
+
+The hook is a command your agent runs later, so install the tool somewhere permanent first (an `npx` copy lives in a cache that can be cleared), then add the hook:
+
+```sh
+npm install -g github:apex-context-dev/apex-context
+apex-context install-hook            # dry run: prints the hook entry and the file it would go in
+apex-context install-hook --write    # optional: apply it (./.claude/settings.json; --user for ~/.claude)
 ```
 
 Then the benchmark demo, which needs no API key and works from any folder because it uses the example tasks that ship with the package:
