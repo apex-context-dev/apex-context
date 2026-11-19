@@ -80,7 +80,7 @@ test('report outputs (default, --json, --share, --explain, gemini, bad args) lea
   try {
     for (const flags of [[], ['--json'], ['--share'], ['--explain'], ['--since', '90d'], ['--agent', 'gemini']]) {
       const r = go(['report', '--dir', root, ...flags], { now });
-      clean(r.text, [root, os.tmpdir()]);
+      clean(r.text, [root]);
       assert.ok(!/rm -rf/.test(r.text));
     }
     for (const bad of [['report', '--dir', root, '--since', 'x'], ['report', '--prices', path.join(root, 'nope-' + S.proj + '.json'), '--dir', root], ['nope-' + S.proj], ['report', '--zzz-' + S.proj.toLowerCase()]]) {
@@ -125,7 +125,7 @@ test('gate warn/block/exit2/verbose output never contains sentinels, paths or sc
       const o = [], e = [];
       const code = run(['gate', ...args], { out: (s) => o.push(s), err: (s) => e.push(s), stdin: JSON.stringify(g.payload), env: {}, stateDir: g.stateDir });
       const text = o.join('\n') + e.join('\n') + code;
-      clean(text, [g.dir, os.tmpdir(), 'secretscript', 'curl', 'evil']);
+      clean(text, [g.dir, 'secretscript', 'curl', 'evil']);
       assert.ok(!text.includes(path.basename(g.dir)));
     }
     const o = []; run(['gate'], { out: (s) => o.push(s), err: () => {}, stdin: JSON.stringify(g.payload), env: {}, stateDir: g.stateDir });
